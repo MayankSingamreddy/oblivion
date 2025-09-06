@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <div class="header">
+      <h1>CleanView</h1>
+      <div class="settings">
+        <div class="status-indicator">
+          <span class="ai-badge">🤖 AI-Powered</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="destructiveToggle">
+          <span class="slider danger">Destructive</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="prompt-section">
+      <textarea 
+        id="promptInput" 
+        placeholder="e.g., hide both sidebars and footer"
+        rows="3"
+      ></textarea>
+      
+      <div class="button-group">
+        <button id="previewBtn" class="btn btn-secondary">Preview</button>
+        <button id="applyBtn" class="btn btn-primary">Apply</button>
+      </div>
+    </div>
+    
+    <div id="resultsSection" class="results-section" style="display: none;">
+      <h3>Matched Targets</h3>
+      <div id="targetsList" class="targets-list"></div>
+    </div>
+    
+    <div class="actions">
+      <button id="undoBtn" class="btn btn-outline">Undo</button>
+      <button id="resetBtn" class="btn btn-outline">Reset</button>
+      <button id="saveRuleBtn" class="btn btn-outline">Save Rule</button>
+    </div>
+    
+    <div id="statusMessage" class="status-message"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+/* Options page styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+  }
+  
+  .options-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+  
+  header h1 {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 40px;
+    color: #0f172a;
+  }
+  
+  section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  section h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #374151;
+  }
+  
+  .setting-item {
+    margin-bottom: 16px;
+  }
+  
+  .setting-item label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #374151;
+  }
+  
+  .setting-item input[type="checkbox"] {
+    margin-right: 8px;
+  }
+  
+  .setting-item input[type="text"],
+  .setting-item input[type="password"],
+  .setting-item input[type="number"] {
+    width: 100%;
+    max-width: 300px;
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .setting-item input:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  
+  .rules-list {
+    min-height: 100px;
+  }
+  
+  .no-rules {
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+    padding: 40px 0;
+  }
+  
+  .rule-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .rule-info {
+    flex: 1;
+  }
+  
+  .rule-domain {
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .rule-prompt {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+  
+  .rule-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-secondary {
+    background: #64748b;
+    color: white;
+  }
+  
+  .btn-secondary:hover {
+    background: #475569;
+  }
+  
+  .btn-danger {
+    background: #dc2626;
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background: #b91c1c;
+  }
+  
+  .btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .status-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+  }
+  
+  .status-message.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .status-message.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  
+  .status-message.error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+  }
+  
