@@ -224,71 +224,71 @@ class RuleEngine {
 
 // Site presets for popular sites
 const SITE_PRESETS = {
-  'x.com': {
-    name: 'X (Twitter)',
-    rules: [
-      {
-        type: 'hide',
-        selector: '[aria-label="Timeline: Trending now"]',
-        description: 'Trending sidebar',
-        anchors: { ariaLabel: 'Timeline: Trending now', role: 'region' }
-      },
-      {
-        type: 'hide', 
-        selector: '[aria-label="Who to follow"]',
-        description: 'Who to follow',
-        anchors: { ariaLabel: 'Who to follow' }
-      },
-      {
-        type: 'hide',
-        selector: '[data-testid="sidebarColumn"]',
-        description: 'Right sidebar',
-        anchors: { testId: 'sidebarColumn' }
-      }
-    ]
-  },
+  // 'x.com': {
+  //   name: 'X (Twitter)',
+  //   rules: [
+  //     {
+  //       type: 'hide',
+  //       selector: '[aria-label="Timeline: Trending now"]',
+  //       description: 'Trending sidebar',
+  //       anchors: { ariaLabel: 'Timeline: Trending now', role: 'region' }
+  //     },
+  //     {
+  //       type: 'hide', 
+  //       selector: '[aria-label="Who to follow"]',
+  //       description: 'Who to follow',
+  //       anchors: { ariaLabel: 'Who to follow' }
+  //     },
+  //     {
+  //       type: 'hide',
+  //       selector: '[data-testid="sidebarColumn"]',
+  //       description: 'Right sidebar',
+  //       anchors: { testId: 'sidebarColumn' }
+  //     }
+  //   ]
+  // },
   
-  'youtube.com': {
-    name: 'YouTube',
-    rules: [
-      {
-        type: 'hide',
-        selector: '#secondary',
-        description: 'Sidebar recommendations',
-        anchors: { id: 'secondary' }
-      },
-      {
-        type: 'hide',
-        selector: '[title="Shorts"]',
-        description: 'Shorts shelf',
-        anchors: { title: 'Shorts' }
-      },
-      {
-        type: 'hide',
-        selector: 'ytd-rich-shelf-renderer',
-        description: 'Homepage shelves',
-        anchors: { tag: 'ytd-rich-shelf-renderer' }
-      }
-    ]
-  },
+  // 'youtube.com': {
+  //   name: 'YouTube',
+  //   rules: [
+  //     {
+  //       type: 'hide',
+  //       selector: '#secondary',
+  //       description: 'Sidebar recommendations',
+  //       anchors: { id: 'secondary' }
+  //     },
+  //     {
+  //       type: 'hide',
+  //       selector: '[title="Shorts"]',
+  //       description: 'Shorts shelf',
+  //       anchors: { title: 'Shorts' }
+  //     },
+  //     {
+  //       type: 'hide',
+  //       selector: 'ytd-rich-shelf-renderer',
+  //       description: 'Homepage shelves',
+  //       anchors: { tag: 'ytd-rich-shelf-renderer' }
+  //     }
+  //   ]
+  // },
   
-  'reddit.com': {
-    name: 'Reddit', 
-    rules: [
-      {
-        type: 'hide',
-        selector: '[data-testid="subreddit-sidebar"]',
-        description: 'Sidebar',
-        anchors: { testId: 'subreddit-sidebar' }
-      },
-      {
-        type: 'hide',
-        selector: '[data-testid="popular-communities"]',
-        description: 'Popular communities',
-        anchors: { testId: 'popular-communities' }
-      }
-    ]
-  }
+  // 'reddit.com': {
+  //   name: 'Reddit', 
+  //   rules: [
+  //     {
+  //       type: 'hide',
+  //       selector: '[data-testid="subreddit-sidebar"]',
+  //       description: 'Sidebar',
+  //       anchors: { testId: 'subreddit-sidebar' }
+  //     },
+  //     {
+  //       type: 'hide',
+  //       selector: '[data-testid="popular-communities"]',
+  //       description: 'Popular communities',
+  //       anchors: { testId: 'popular-communities' }
+  //     }
+  //   ]
+  // }
 };
 
 window.ruleEngine = new RuleEngine();

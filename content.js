@@ -7,69 +7,77 @@ class ElementRemover {
     this.isSelectionMode = false;
     this.sitePresets = this.getSitePresets();
     
+    // Bind event handlers once to avoid issues with removeEventListener
+    this.boundHandlers = {
+      hover: this.handleHover.bind(this),
+      mouseOut: this.handleMouseOut.bind(this),
+      click: this.handleClick.bind(this),
+      keydown: this.handleKeydown.bind(this)
+    };
+    
     this.setupMessageHandler();
     this.applyPersistedRules();
   }
 
   getSitePresets() {
     return {
-      'x.com': {
-        name: 'X (Twitter)',
-        rules: [
-          {
-            type: 'hide',
-            selector: '[aria-label="Timeline: Trending now"]',
-            description: 'Trending sidebar'
-          },
-          {
-            type: 'hide', 
-            selector: '[aria-label="Who to follow"]',
-            description: 'Who to follow'
-          },
-          {
-            type: 'hide',
-            selector: '[data-testid="sidebarColumn"]',
-            description: 'Right sidebar'
-          }
-        ]
-      },
+      // 'x.com': {
+      //   name: 'X (Twitter)',
+      //   rules: [
+      //     {
+      //       type: 'hide',
+      //       selector: '[aria-label="Timeline: Trending now"]',
+      //       description: 'Trending sidebar'
+      //     },
+      //     {
+      //       type: 'hide', 
+      //       selector: '[aria-label="Who to follow"]',
+      //       description: 'Who to follow'
+      //     },
+      //     {
+      //       type: 'hide',
+      //       selector: '[data-testid="sidebarColumn"]',
+      //       description: 'Right sidebar'
+      //     }
+      //   ]
+      // },
       
-      'youtube.com': {
-        name: 'YouTube',
-        rules: [
-          {
-            type: 'hide',
-            selector: '#secondary',
-            description: 'Sidebar recommendations'
-          },
-          {
-            type: 'hide',
-            selector: '[title="Shorts"]',
-            description: 'Shorts shelf'
-          },
-          {
-            type: 'hide',
-            selector: 'ytd-rich-shelf-renderer',
-            description: 'Homepage shelves'
-          }
-        ]
-      },
+      // 'youtube.com': {
+      //   name: 'YouTube',
+      //   rules: [
+      //     {
+      //       type: 'hide',
+      //       selector: '#secondary',
+      //       description: 'Sidebar recommendations'
+      //     },
+      //     {
+      //       type: 'hide',
+      //       selector: '[title="Shorts"]',
+      //       description: 'Shorts shelf'
+      //     },
+      //     {
+      //       type: 'hide',
+      //       selector: 'ytd-rich-shelf-renderer',
+      //       description: 'Homepage shelves'
+      //     }
+      //   ]
+      // },
       
-      'reddit.com': {
-        name: 'Reddit', 
-        rules: [
-          {
-            type: 'hide',
-            selector: '[data-testid="subreddit-sidebar"]',
-            description: 'Sidebar'
-          },
-          {
-            type: 'hide',
-            selector: '[data-testid="popular-communities"]',
-            description: 'Popular communities'
-          }
-        ]
-      }
+      // 'reddit.com': {
+      //   name: 'Reddit', 
+      //   rules: [
+      //     {
+      //       type: 'hide',
+      //       selector: '[data-testid="subreddit-sidebar"]',
+      //       description: 'Sidebar'
+      //     },
+      //     {
+      //       type: 'hide',
+      //       selector: '[data-testid="popular-communities"]',
+      //       description: 'Popular communities'
+      //     }
+      //   ]
+      // }
     };
   }
 
@@ -419,20 +427,23 @@ class ElementRemover {
 
   enterSelectionMode() {
     document.body.style.cursor = 'crosshair';
-    document.addEventListener('mouseover', this.handleHover.bind(this));
-    document.addEventListener('mouseout', this.handleMouseOut.bind(this));
-    document.addEventListener('click', this.handleClick.bind(this));
+    document.addEventListener('mouseover', this.boundHandlers.hover);
+    document.addEventListener('mouseout', this.boundHandlers.mouseOut);
+    
+    // Use capture phase to intercept clicks BEFORE they reach the target
+    document.addEventListener('click', this.boundHandlers.click, true);
     
     // Listen for ESC key
-    document.addEventListener('keydown', this.handleKeydown.bind(this));
+    document.addEventListener('keydown', this.boundHandlers.keydown);
   }
 
   exitSelectionMode() {
     document.body.style.cursor = '';
-    document.removeEventListener('mouseover', this.handleHover.bind(this));
-    document.removeEventListener('mouseout', this.handleMouseOut.bind(this));
-    document.removeEventListener('click', this.handleClick.bind(this));
-    document.removeEventListener('keydown', this.handleKeydown.bind(this));
+    document.removeEventListener('mouseover', this.boundHandlers.hover);
+    document.removeEventListener('mouseout', this.boundHandlers.mouseOut);
+    // Remove with capture flag to match how it was added
+    document.removeEventListener('click', this.boundHandlers.click, true);
+    document.removeEventListener('keydown', this.boundHandlers.keydown);
     
     this.clearHighlights();
   }
@@ -448,7 +459,9 @@ class ElementRemover {
     if (!this.isSelectionMode || e.target.hasAttribute('data-erpro')) return;
     
     this.clearHighlights();
-    this.highlightElement(e.target);
+    
+    const isInteractive = this.isInteractiveElement(e.target);
+    this.highlightElement(e.target, isInteractive);
   }
 
   handleMouseOut(e) {
@@ -458,8 +471,38 @@ class ElementRemover {
   handleClick(e) {
     if (!this.isSelectionMode || e.target.hasAttribute('data-erpro')) return;
     
+    // IMMEDIATELY stop all event propagation - this runs in capture phase
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    // Check if it's an interactive element
+    const isInteractive = this.isInteractiveElement(e.target);
+    
+    // For buttons and interactive elements, we're extra cautious
+    if (isInteractive) {
+      // Completely block the event
+      if (e.target.click) {
+        // Temporarily disable the element's click method
+        const originalClick = e.target.click;
+        e.target.click = () => {};
+        setTimeout(() => {
+          if (e.target.click === originalClick) return; // Already restored
+          e.target.click = originalClick;
+        }, 100);
+      }
+      
+      // Disable the element temporarily
+      const wasDisabled = e.target.disabled;
+      if ('disabled' in e.target) {
+        e.target.disabled = true;
+        setTimeout(() => {
+          if (!wasDisabled) {
+            e.target.disabled = false;
+          }
+        }, 100);
+      }
+    }
     
     const rule = {
       type: 'hide',
@@ -470,7 +513,7 @@ class ElementRemover {
     const count = this.applyRule(rule);
     if (count > 0) {
       this.saveRule(rule);
-      this.showToast(`Hidden: ${rule.description}`, 'success');
+      this.showToast(`Hidden: ${rule.description}${isInteractive ? ' (click blocked)' : ''}`, 'success');
       
       chrome.runtime.sendMessage({
         action: 'elementHidden',
@@ -480,9 +523,93 @@ class ElementRemover {
     }
   }
 
-  highlightElement(element) {
-    element.style.setProperty('outline', '2px solid #ff6b35', 'important');
-    element.style.setProperty('outline-offset', '2px', 'important');
+  isInteractiveElement(element) {
+    // Check if element or any parent is interactive
+    const interactiveElements = [
+      'button', 'a', 'input', 'select', 'textarea', 
+      'label', 'option', 'summary', 'details'
+    ];
+    
+    const interactiveRoles = [
+      'button', 'link', 'menuitem', 'tab', 'checkbox', 
+      'radio', 'textbox', 'combobox', 'listbox'
+    ];
+    
+    let current = element;
+    while (current && current !== document.body) {
+      // Check tag name
+      if (interactiveElements.includes(current.tagName.toLowerCase())) {
+        return true;
+      }
+      
+      // Check role
+      const role = current.getAttribute('role');
+      if (role && interactiveRoles.includes(role.toLowerCase())) {
+        return true;
+      }
+      
+      // Check for click handlers
+      if (current.onclick || current.hasAttribute('onclick')) {
+        return true;
+      }
+      
+      // Check for tabindex (focusable)
+      if (current.hasAttribute('tabindex') && current.getAttribute('tabindex') !== '-1') {
+        return true;
+      }
+      
+      // Check common clickable classes/attributes
+      const classList = current.classList;
+      const clickableClasses = ['btn', 'button', 'link', 'clickable', 'interactive'];
+      if (clickableClasses.some(cls => 
+        Array.from(classList).some(className => 
+          className.toLowerCase().includes(cls)))) {
+        return true;
+      }
+      
+      current = current.parentElement;
+    }
+    
+    return false;
+  }
+
+  highlightElement(element, isInteractive = false) {
+    if (isInteractive) {
+      // Different styling for interactive elements
+      element.style.setProperty('outline', '2px dashed #fbbf24', 'important');
+      element.style.setProperty('outline-offset', '2px', 'important');
+      element.style.setProperty('background-color', 'rgba(251, 191, 36, 0.1)', 'important');
+      
+      // Add a tooltip-like indicator
+      const indicator = document.createElement('div');
+      indicator.setAttribute('data-erpro', 'interactive-indicator');
+      indicator.textContent = 'Interactive element - click safely blocked';
+      indicator.style.cssText = `
+        position: absolute;
+        background: #fbbf24;
+        color: #92400e;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 4px;
+        z-index: 10000;
+        pointer-events: none;
+        white-space: nowrap;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `;
+      
+      const rect = element.getBoundingClientRect();
+      indicator.style.left = (rect.left + window.scrollX) + 'px';
+      indicator.style.top = (rect.top + window.scrollY - 30) + 'px';
+      
+      document.body.appendChild(indicator);
+      element.setAttribute('data-erpro-interactive-indicator', 'true');
+    } else {
+      // Normal highlighting for non-interactive elements
+      element.style.setProperty('outline', '2px solid #ff6b35', 'important');
+      element.style.setProperty('outline-offset', '2px', 'important');
+    }
+    
     element.setAttribute('data-erpro-highlighted', 'true');
   }
 
@@ -490,9 +617,15 @@ class ElementRemover {
     const highlighted = document.querySelectorAll('[data-erpro-highlighted]');
     highlighted.forEach(el => {
       el.style.removeProperty('outline');
-      el.style.removeProperty('outline-offset');  
+      el.style.removeProperty('outline-offset');
+      el.style.removeProperty('background-color');
       el.removeAttribute('data-erpro-highlighted');
+      el.removeAttribute('data-erpro-interactive-indicator');
     });
+    
+    // Remove interactive indicators
+    const indicators = document.querySelectorAll('[data-erpro="interactive-indicator"]');
+    indicators.forEach(indicator => indicator.remove());
   }
 
   generateSelector(element) {
