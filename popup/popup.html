@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header with site info and status -->
+    <div class="header">
+      <div class="site-info">
+        <h2 id="siteName">Loading...</h2>
+        <div class="status-dot" id="statusDot"></div>
+      </div>
+      <button id="optionsBtn" class="options-btn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- Primary Actions -->
+    <div class="primary-actions">
+      <button id="cleanBtn" class="action-btn clean-btn">
+        <div class="btn-icon">✨</div>
+        <div class="btn-text">
+          <div class="btn-title">Clean</div>
+          <div class="btn-subtitle">One-tap preset</div>
+        </div>
+      </button>
+
+      <button id="tweakBtn" class="action-btn tweak-btn">
+        <div class="btn-icon">🎯</div>
+        <div class="btn-text">
+          <div class="btn-title">Tweak</div>
+          <div class="btn-subtitle">Point & hide</div>
+        </div>
+      </button>
+
+      <button id="askAiBtn" class="action-btn ai-btn">
+        <div class="btn-icon">🤖</div>
+        <div class="btn-text">
+          <div class="btn-title">Ask AI</div>
+          <div class="btn-subtitle">Natural language</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- AI Input Panel (hidden by default) -->
+    <div id="aiInputPanel" class="ai-input-panel" style="display: none;">
+      <textarea id="aiPrompt" placeholder="e.g., 'Hide trending and suggestions'"></textarea>
+      <div class="ai-actions">
+        <button id="aiSubmitBtn" class="btn primary">Apply</button>
+        <button id="aiCancelBtn" class="btn secondary">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Always Apply Toggle -->
+    <div class="always-apply">
+      <label class="toggle">
+        <input type="checkbox" id="alwaysApplyToggle">
+        <span class="toggle-slider"></span>
+        <span class="toggle-label">Always apply on this site</span>
+      </label>
+    </div>
+
+    <!-- Inline Chips for Common Elements -->
+    <div id="chipsContainer" class="chips-container" style="display: none;">
+      <div class="chips-label">Quick toggles:</div>
+      <div id="chipsList" class="chips-list">
+        <!-- Chips populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="footer-controls">
+      <button id="undoBtn" class="footer-btn">Undo</button>
+      <button id="resetBtn" class="footer-btn">Reset</button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+    <!-- Tweak Mode Indicator -->
+    <div id="tweakIndicator" class="tweak-indicator" style="display: none;">
+      <div class="indicator-content">
+        <span class="indicator-icon">🎯</span>
+        <div class="indicator-text">
+          <strong>Tweak Mode Active</strong>
+          <div class="indicator-subtitle">Hover and click elements to hide them</div>
+          <div class="indicator-escape">Press ESC to exit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

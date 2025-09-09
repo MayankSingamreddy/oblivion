@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Element Remover Pro - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Element Remover Pro Settings</h1>
+      <p class="subtitle">Configure AI-powered element detection</p>
+    </div>
+
+    <div class="section">
+      <h2>OpenAI Configuration</h2>
+      <div class="setting-group">
+        <label for="apiKey">OpenAI API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-..." />
+        <div class="help-text">
+          Get your API key from <a href="https://platform.openai.com/account/api-keys" target="_blank">OpenAI Platform</a>.
+          This key is stored locally in your browser and never shared.
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label for="model">AI Model</label>
+        <select id="model">
+          <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          <option value="gpt-4">GPT-4</option>
+        </select>
+        <div class="help-text">
+          GPT-4o Mini provides the best balance of speed and accuracy for element detection.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>AI Detection Settings</h2>
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="enableAI" checked />
+          Enable AI-powered element detection
+        </label>
+        <div class="help-text">
+          When enabled, uses OpenAI to analyze page structure for better element detection.
+          Falls back to pattern matching if disabled or API key not provided.
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="enableFallback" checked />
+          Enable pattern-based fallback
+        </label>
+        <div class="help-text">
+          When AI detection fails, automatically fall back to pattern-based detection.
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Safety Settings</h2>
+      <div class="setting-group">
+        <label for="maxElements">Maximum elements to affect</label>
+        <input type="number" id="maxElements" value="100" min="1" max="500" />
+        <div class="help-text">
+          Safety limit to prevent accidentally hiding too many elements.
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="saveBtn" class="btn primary">Save Settings</button>
+      <button id="testBtn" class="btn secondary">Test API Key</button>
+      <button id="resetBtn" class="btn secondary">Reset to Defaults</button>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <div class="info-section">
+      <h3>How AI Detection Works</h3>
+      <ul>
+        <li><strong>Page Analysis</strong>: AI examines the webpage structure and content</li>
+        <li><strong>Smart Targeting</strong>: Understands context to find exactly what you want</li>
+        <li><strong>Safety First</strong>: Validates selections to prevent accidental damage</li>
+        <li><strong>Privacy</strong>: Your API key stays local, OpenAI only sees page structure</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
