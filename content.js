@@ -1,714 +1,630 @@
+// Simplified Element Remover Pro content script
 class ElementRemover {
   constructor() {
-    this.history = [];
-    this.isManualSelectionMode = false;
-    this.hoveredElement = null;
-    this.previewOverlays = [];
-    this.isPreviewMode = false;
-    this.previewTargets = [];
-    this.selectedElements = new Set(); // Track which elements are selected for removal
-    this.isPageReset = false; // Track if page is in reset state
-    this.savedHistory = []; // Store history when page is reset
+    this.host = location.hostname;
+    this.appliedRules = new Set();
+    this.hiddenElements = new WeakMap();
+    this.isSelectionMode = false;
+    this.sitePresets = this.getSitePresets();
     
-    this.setupMessageListener();
-    this.setupKeyboardListener();
-    console.log('Element Remover Pro: Content script initialized');
+    this.setupMessageHandler();
+    this.applyPersistedRules();
   }
 
-  setupMessageListener() {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      switch (request.action) {
-        case 'parseAndPreview':
-          this.handleParseAndPreview(request.prompt);
-          break;
-        case 'applyChanges':
-          this.handleApplyChanges(request.targets);
-          break;
-        case 'clearPreview':
-          this.clearPreview();
-          break;
-        case 'getPreviewState':
-          sendResponse({ 
-            isPreviewMode: this.isPreviewMode, 
-            selectedCount: this.selectedElements.size,
-            totalCount: this.previewTargets.reduce((sum, target) => sum + target.elements.length, 0)
-          });
-          break;
-        case 'getManualState':
-          sendResponse({ 
-            isManualSelectionMode: this.isManualSelectionMode,
-            removedCount: this.history.length
-          });
-          break;
-        case 'getResetState':
-          sendResponse({ 
-            isPageReset: this.isPageReset,
-            hasHistory: this.history.length > 0 || this.savedHistory.length > 0
-          });
-          break;
-        case 'toggleSelection':
-          this.handleToggleSelection();
-          sendResponse({ active: this.isManualSelectionMode });
-          break;
-        case 'disableSelection':
-          this.disableManualSelection();
-          break;
-        case 'undo':
-          this.handleUndo();
-          break;
-        case 'reset':
-          this.handleReset();
-          break;
+  getSitePresets() {
+    return {
+      'x.com': {
+        name: 'X (Twitter)',
+        rules: [
+          {
+            type: 'hide',
+            selector: '[aria-label="Timeline: Trending now"]',
+            description: 'Trending sidebar'
+          },
+          {
+            type: 'hide', 
+            selector: '[aria-label="Who to follow"]',
+            description: 'Who to follow'
+          },
+          {
+            type: 'hide',
+            selector: '[data-testid="sidebarColumn"]',
+            description: 'Right sidebar'
+          }
+        ]
+      },
+      
+      'youtube.com': {
+        name: 'YouTube',
+        rules: [
+          {
+            type: 'hide',
+            selector: '#secondary',
+            description: 'Sidebar recommendations'
+          },
+          {
+            type: 'hide',
+            selector: '[title="Shorts"]',
+            description: 'Shorts shelf'
+          },
+          {
+            type: 'hide',
+            selector: 'ytd-rich-shelf-renderer',
+            description: 'Homepage shelves'
+          }
+        ]
+      },
+      
+      'reddit.com': {
+        name: 'Reddit', 
+        rules: [
+          {
+            type: 'hide',
+            selector: '[data-testid="subreddit-sidebar"]',
+            description: 'Sidebar'
+          },
+          {
+            type: 'hide',
+            selector: '[data-testid="popular-communities"]',
+            description: 'Popular communities'
+          }
+        ]
       }
-      return true;
+    };
+  }
+
+  setupMessageHandler() {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      this.handleMessage(message, sender, sendResponse);
+      return true; // Keep message channel open for async response
     });
   }
 
-  setupKeyboardListener() {
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && this.isManualSelectionMode) {
-        this.disableManualSelection();
-        chrome.runtime.sendMessage({
-          action: 'selectionToggled',
+  async handleMessage(message, sender, sendResponse) {
+    try {
+      switch (message.action) {
+        case 'getPageInfo':
+          sendResponse(await this.getPageInfo());
+          break;
+          
+        case 'applyCleanPreset':
+          sendResponse(await this.applyCleanPreset());
+          break;
+          
+        case 'askAI':
+          sendResponse(await this.handleAIRequest(message.prompt));
+          break;
+          
+        case 'startTweak':
+          this.toggleSelectionMode();
+          sendResponse({ success: true });
+          break;
+          
+        case 'undo':
+          this.undo();
+          sendResponse({ success: true });
+          break;
+          
+        case 'resetSite':
+          sendResponse(await this.resetSite(message.temporary));
+          break;
+          
+        default:
+          sendResponse({ error: 'Unknown action' });
+      }
+    } catch (error) {
+      console.error('Message handler error:', error);
+      sendResponse({ error: error.message });
+    }
+  }
+
+  async getPageInfo() {
+    const hasPreset = !!this.sitePresets[this.host];
+    const appliedCount = this.appliedRules.size;
+    
+    // Detect common elements for chips
+    const chips = this.detectCommonElements();
+    
+    return {
+      host: this.host,
+      path: location.pathname,
+      hasPreset,
+      appliedCount,
+      chips,
+      isActive: appliedCount > 0
+    };
+  }
+
+  detectCommonElements() {
+    const chips = [];
+    
+    const patterns = {
+      'trending': {
+        selectors: ['[aria-label*="trending" i]', '[aria-label*="trend" i]', '*[title*="trending" i]'],
+        name: 'Trending'
+      },
+      'sidebar': {
+        selectors: ['aside', '[role="complementary"]', '*[class*="sidebar" i]'],
+        name: 'Sidebar'  
+      },
+      'recommendations': {
+        selectors: ['*[aria-label*="recommend" i]', '*[class*="recommend" i]', '*[data-testid*="recommend" i]'],
+        name: 'Recommendations'
+      },
+      'ads': {
+        selectors: ['*[id*="ad" i]', '*[class*="ad" i]', '*[aria-label*="sponsor" i]'],
+        name: 'Ads'
+      }
+    };
+
+    Object.entries(patterns).forEach(([key, pattern]) => {
+      let found = false;
+      for (const selector of pattern.selectors) {
+        try {
+          if (document.querySelector(selector)) {
+            found = true;
+            break;
+          }
+        } catch (e) {
+          // Invalid selector, skip
+        }
+      }
+      
+      if (found) {
+        chips.push({
+          id: key,
+          name: pattern.name,
           active: false
         });
       }
     });
+
+    return chips;
   }
 
-  // Natural Language Processing and Preview
-  async handleParseAndPreview(prompt) {
+  async applyCleanPreset() {
+    const preset = this.sitePresets[this.host];
+    if (!preset) {
+      return { error: 'No preset available for this site' };
+    }
+
+    let appliedCount = 0;
+    const results = [];
+
+    for (const rule of preset.rules) {
+      try {
+        const count = this.applyRule(rule);
+        if (count > 0) {
+          await this.saveRule(rule);
+          appliedCount += count;
+          results.push({
+            description: rule.description,
+            count
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to apply rule:', rule, error);
+      }
+    }
+
+    return {
+      success: true,
+      appliedCount,
+      results,
+      presetName: preset.name
+    };
+  }
+
+  async handleAIRequest(prompt) {
     try {
-      let targets = [];
-      
-      // First try AI-powered detection
+      // Try to load AI service
+      if (typeof window.aiService === 'undefined') {
+        await this.loadAIService();
+      }
+
       if (window.aiService) {
-        try {
-          console.log('Element Remover Pro: Trying AI-powered detection...');
-          targets = await window.aiService.generateSelectors(prompt);
-          console.log('Element Remover Pro: AI detection successful', targets);
-        } catch (error) {
-          console.log('Element Remover Pro: AI detection failed, falling back to patterns:', error.message);
-          
-          // Check if fallback is enabled
-          const settings = await chrome.storage.local.get({ enableFallback: true });
-          if (!settings.enableFallback) {
-            throw error; // Don't fall back if disabled
+        const suggestions = await window.aiService.generateSelectors(prompt);
+        
+        const results = [];
+        let totalApplied = 0;
+
+        for (const suggestion of suggestions) {
+          const rule = {
+            type: 'hide',
+            selector: suggestion.selector,
+            description: suggestion.description
+          };
+
+          try {
+            const count = this.applyRule(rule);
+            if (count > 0) {
+              await this.saveRule(rule);
+              totalApplied += count;
+              results.push({
+                description: rule.description,
+                count,
+                selector: rule.selector
+              });
+            }
+          } catch (error) {
+            console.warn('Failed to apply AI rule:', rule, error);
           }
         }
+
+        return {
+          success: true,
+          appliedCount: totalApplied,
+          results
+        };
       }
-      
-      // Fallback to pattern-based detection if AI failed or no targets found
-      if (targets.length === 0) {
-        console.log('Element Remover Pro: Using pattern-based detection');
-        targets = this.parseNaturalLanguage(prompt);
-      }
-      
-      this.previewTargets = targets;
-      
-      // Initially select all elements
-      this.selectedElements.clear();
-      targets.forEach(target => {
-        target.elements.forEach(el => this.selectedElements.add(el));
-      });
-      
-      this.showPreview(targets);
-      
-      chrome.runtime.sendMessage({
-        action: 'previewResults',
-        targets: targets.map(t => ({
-          selector: t.selector,
-          count: t.elements.length,
-          description: t.description
-        }))
-      });
     } catch (error) {
-      console.error('Error in parseAndPreview:', error);
-      chrome.runtime.sendMessage({
-        action: 'error',
-        message: error.message
-      });
+      console.warn('AI request failed, falling back to patterns:', error);
     }
+
+    // Fallback to pattern matching
+    return this.handlePatternFallback(prompt);
   }
 
-  parseNaturalLanguage(prompt) {
-    const lowerPrompt = prompt.toLowerCase().trim();
-    const targets = [];
-    
-    // Define common element patterns with better selectors
+  async loadAIService() {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('ai/ai-service.js');
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  handlePatternFallback(prompt) {
     const patterns = {
       'ads|advertisement|sponsored': {
-        selectors: [
-          '[id*="ad" i]', '[class*="ad" i]',
-          '[id*="advertisement" i]', '[class*="advertisement" i]',
-          '[id*="sponsor" i]', '[class*="sponsor" i]',
-          '[data-testid*="ad" i]',
-          'div[style*="display"][style*="block"] img[src*="ad"]'
-        ],
-        description: 'Advertisements and sponsored content'
+        selectors: ['*[id*="ad" i]', '*[class*="ad" i]', '*[aria-label*="sponsor" i]'],
+        description: 'Advertisements'
       },
-      'sidebar|side bar|side panel': {
-        selectors: [
-          'aside', '[role="complementary"]',
-          '[id*="sidebar" i]', '[class*="sidebar" i]',
-          '[id*="side" i]', '[class*="side" i]'
-        ],
-        description: 'Sidebars and side panels'
+      'sidebar|aside': {
+        selectors: ['aside', '[role="complementary"]'],
+        description: 'Sidebars'
       },
-      'nav|navigation|menu': {
-        selectors: [
-          'nav', '[role="navigation"]',
-          '[id*="nav" i]', '[class*="nav" i]',
-          '[id*="menu" i]', '[class*="menu" i]'
-        ],
-        description: 'Navigation and menus'
+      'trending|trend': {
+        selectors: ['*[aria-label*="trending" i]', '*[title*="trending" i]'],
+        description: 'Trending content'
       },
-      'header|top bar': {
-        selectors: [
-          'header', '[role="banner"]',
-          '[id*="header" i]', '[class*="header" i]',
-          '[id*="top" i]', '[class*="top" i]'
-        ],
-        description: 'Headers and top bars'
-      },
-      'footer|bottom': {
-        selectors: [
-          'footer', '[role="contentinfo"]',
-          '[id*="footer" i]', '[class*="footer" i]',
-          '[id*="bottom" i]', '[class*="bottom" i]'
-        ],
-        description: 'Footers and bottom content'
-      },
-      'popup|modal|dialog|overlay': {
-        selectors: [
-          '[role="dialog"]', '[role="alertdialog"]',
-          '[id*="popup" i]', '[class*="popup" i]',
-          '[id*="modal" i]', '[class*="modal" i]',
-          '[id*="overlay" i]', '[class*="overlay" i]',
-          '.modal-backdrop', '.overlay'
-        ],
-        description: 'Popups, modals, and overlays'
-      },
-      'comment|comments': {
-        selectors: [
-          '[id*="comment" i]', '[class*="comment" i]',
-          '[data-testid*="comment" i]'
-        ],
-        description: 'Comments section'
-      },
-      'social|share|sharing': {
-        selectors: [
-          '[id*="social" i]', '[class*="social" i]',
-          '[id*="share" i]', '[class*="share" i]',
-          '[data-testid*="share" i]'
-        ],
-        description: 'Social sharing buttons'
+      'recommend|suggestion': {
+        selectors: ['*[aria-label*="recommend" i]', '*[class*="recommend" i]'],
+        description: 'Recommendations'
       }
     };
 
-    // Find matching patterns
-    for (const [pattern, config] of Object.entries(patterns)) {
-      const regex = new RegExp(pattern, 'i');
-      if (regex.test(lowerPrompt)) {
-        const elements = this.findElementsBySelectors(config.selectors);
-        if (elements.length > 0) {
-          targets.push({
-            selector: config.selectors.join(', '),
-            elements: elements,
+    const results = [];
+    let totalApplied = 0;
+
+    Object.entries(patterns).forEach(([pattern, config]) => {
+      if (new RegExp(pattern, 'i').test(prompt)) {
+        for (const selector of config.selectors) {
+          const rule = {
+            type: 'hide',
+            selector,
             description: config.description
-          });
+          };
+
+          try {
+            const count = this.applyRule(rule);
+            if (count > 0) {
+              this.saveRule(rule);
+              totalApplied += count;
+              results.push({
+                description: config.description,
+                count,
+                selector
+              });
+              break; // Only apply first matching selector per pattern
+            }
+          } catch (error) {
+            console.warn('Failed to apply pattern rule:', rule, error);
+          }
         }
       }
-    }
-
-    // If no patterns match, try a more generic approach
-    if (targets.length === 0) {
-      // Extract potential keywords
-      const words = lowerPrompt.split(/\s+/).filter(word => word.length > 2);
-      for (const word of words) {
-        const elements = this.findElementsByKeyword(word);
-        if (elements.length > 0 && elements.length < 50) { // Avoid too broad selections
-          targets.push({
-            selector: `[id*="${word}" i], [class*="${word}" i]`,
-            elements: elements,
-            description: `Elements containing "${word}"`
-          });
-        }
-      }
-    }
-
-    return targets;
-  }
-
-  findElementsBySelectors(selectors) {
-    const elements = new Set();
-    selectors.forEach(selector => {
-      try {
-        const found = document.querySelectorAll(selector);
-        found.forEach(el => {
-          if (this.isElementVisible(el)) {
-            elements.add(el);
-          }
-        });
-      } catch (e) {
-        // Skip invalid selectors
-      }
     });
-    return Array.from(elements);
-  }
 
-  findElementsByKeyword(keyword) {
-    const elements = [];
-    const selectors = [
-      `[id*="${keyword}" i]`,
-      `[class*="${keyword}" i]`,
-      `[data-testid*="${keyword}" i]`
-    ];
-    
-    selectors.forEach(selector => {
-      try {
-        const found = document.querySelectorAll(selector);
-        found.forEach(el => {
-          if (this.isElementVisible(el) && !elements.includes(el)) {
-            elements.push(el);
-          }
-        });
-      } catch (e) {
-        // Skip invalid selectors
-      }
-    });
-    
-    return elements;
-  }
-
-  isElementVisible(element) {
-    const style = window.getComputedStyle(element);
-    const rect = element.getBoundingClientRect();
-    
-    return (
-      style.display !== 'none' &&
-      style.visibility !== 'hidden' &&
-      style.opacity !== '0' &&
-      rect.width > 0 &&
-      rect.height > 0
-    );
-  }
-
-  showPreview(targets) {
-    this.clearPreview();
-    this.isPreviewMode = true;
-    
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-    
-    targets.forEach((target, index) => {
-      const color = colors[index % colors.length];
-      target.elements.forEach(element => {
-        const overlay = this.createPreviewOverlay(element, color, target.description);
-        this.previewOverlays.push(overlay);
-        document.body.appendChild(overlay);
-      });
-    });
-  }
-
-  toggleElementSelection(element) {
-    if (this.selectedElements.has(element)) {
-      this.selectedElements.delete(element);
-    } else {
-      this.selectedElements.add(element);
-    }
-    
-    // Update the visual state of the overlay
-    const overlay = this.previewOverlays.find(o => o.dataset.targetElement === this.getElementId(element));
-    if (overlay) {
-      this.updateOverlayVisualState(overlay, element);
-    }
-    
-    // Notify popup of state change
-    chrome.runtime.sendMessage({
-      action: 'selectionChanged',
-      selectedCount: this.selectedElements.size,
-      totalCount: this.previewTargets.reduce((sum, target) => sum + target.elements.length, 0)
-    });
-  }
-
-  getElementId(element) {
-    // Create a unique identifier for the element
-    if (!element._elementRemoverId) {
-      element._elementRemoverId = 'er-' + Math.random().toString(36).substr(2, 9);
-    }
-    return element._elementRemoverId;
-  }
-
-  createPreviewOverlay(element, color, description) {
-    const rect = element.getBoundingClientRect();
-    const overlay = document.createElement('div');
-    const elementId = this.getElementId(element);
-    
-    overlay.style.cssText = `
-      position: fixed;
-      top: ${rect.top + window.scrollY}px;
-      left: ${rect.left + window.scrollX}px;
-      width: ${rect.width}px;
-      height: ${rect.height}px;
-      background: ${color}33;
-      border: 2px solid ${color};
-      pointer-events: all;
-      z-index: 999999;
-      box-sizing: border-box;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    `;
-    
-    overlay.setAttribute('data-element-remover-preview', 'true');
-    overlay.setAttribute('data-target-element', elementId);
-    overlay.setAttribute('data-description', description);
-    
-    // Add click handler to toggle selection
-    overlay.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.toggleElementSelection(element);
-    });
-    
-    // Add hover effect
-    overlay.addEventListener('mouseenter', () => {
-      overlay.style.boxShadow = `0 0 20px ${color}66`;
-    });
-    
-    overlay.addEventListener('mouseleave', () => {
-      overlay.style.boxShadow = 'none';
-    });
-    
-    // Create tooltip
-    this.addTooltipToOverlay(overlay, element, description);
-    
-    // Set initial visual state
-    this.updateOverlayVisualState(overlay, element);
-    
-    return overlay;
-  }
-
-  addTooltipToOverlay(overlay, element, description) {
-    const tooltip = document.createElement('div');
-    const isSelected = this.selectedElements.has(element);
-    
-    tooltip.style.cssText = `
-      position: absolute;
-      top: -35px;
-      left: 0;
-      background: #1f2937;
-      color: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      white-space: nowrap;
-      z-index: 1000000;
-      pointer-events: none;
-      opacity: 0;
-      transform: translateY(-5px);
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    `;
-    
-    tooltip.textContent = isSelected ? `Click to unselect: ${description}` : `Click to select: ${description}`;
-    overlay.appendChild(tooltip);
-    
-    // Show tooltip on hover
-    overlay.addEventListener('mouseenter', () => {
-      tooltip.style.opacity = '1';
-      tooltip.style.transform = 'translateY(0)';
-    });
-    
-    overlay.addEventListener('mouseleave', () => {
-      tooltip.style.opacity = '0';
-      tooltip.style.transform = 'translateY(-5px)';
-    });
-  }
-
-  updateOverlayVisualState(overlay, element) {
-    const isSelected = this.selectedElements.has(element);
-    const tooltip = overlay.querySelector('div');
-    
-    if (isSelected) {
-      overlay.style.opacity = '1';
-      overlay.style.filter = 'none';
-      if (tooltip) {
-        const description = overlay.getAttribute('data-description');
-        tooltip.textContent = `Click to unselect: ${description}`;
-      }
-    } else {
-      overlay.style.opacity = '0.4';
-      overlay.style.filter = 'grayscale(70%)';
-      if (tooltip) {
-        const description = overlay.getAttribute('data-description');
-        tooltip.textContent = `Click to select: ${description}`;
-      }
-    }
-  }
-
-  clearPreview() {
-    this.previewOverlays.forEach(overlay => overlay.remove());
-    this.previewOverlays = [];
-    this.previewTargets = [];
-    this.selectedElements.clear();
-    this.isPreviewMode = false;
-  }
-
-  // Apply Changes
-  handleApplyChanges(targets) {
-    // Only apply changes to selected elements
-    const elementsToRemove = Array.from(this.selectedElements);
-    this.clearPreview();
-    
-    if (elementsToRemove.length === 0) {
-      chrome.runtime.sendMessage({
-        action: 'error',
-        message: 'No elements found to remove'
-      });
-      return;
-    }
-
-    // Safety check
-    if (elementsToRemove.length > 100) {
-      chrome.runtime.sendMessage({
-        action: 'error',
-        message: 'Too many elements selected. Please be more specific.'
-      });
-      return;
-    }
-
-    // Store for undo
-    const historyItem = {
-      timestamp: Date.now(),
-      elements: elementsToRemove.map(el => ({
-        element: el,
-        originalDisplay: el.style.display,
-        originalVisibility: el.style.visibility,
-        parent: el.parentNode,
-        nextSibling: el.nextSibling
-      }))
+    return {
+      success: true,
+      appliedCount: totalApplied,
+      results,
+      fallback: true
     };
+  }
 
-    // Hide elements (non-destructive)
-    elementsToRemove.forEach(el => {
-      el.style.display = 'none';
-    });
+  applyRule(rule) {
+    try {
+      const elements = document.querySelectorAll(rule.selector);
+      let appliedCount = 0;
 
-    this.history.push(historyItem);
-    
-    // If we were in reset state, we're no longer in original state
-    if (this.isPageReset) {
-      this.isPageReset = false;
-      chrome.runtime.sendMessage({
-        action: 'resetStateChanged',
-        isPageReset: false
+      elements.forEach(element => {
+        if (this.hiddenElements.has(element)) return;
+
+        switch (rule.type) {
+          case 'hide':
+            element.style.setProperty('display', 'none', 'important');
+            element.setAttribute('data-erpro-hidden', 'true');
+            break;
+          case 'dim':
+            element.style.setProperty('opacity', '0.2', 'important');
+            element.setAttribute('data-erpro-dimmed', 'true');
+            break;
+        }
+
+        this.hiddenElements.set(element, rule);
+        appliedCount++;
       });
+
+      if (appliedCount > 0) {
+        this.appliedRules.add(rule.selector);
+      }
+
+      return appliedCount;
+    } catch (error) {
+      console.error('Failed to apply rule:', rule, error);
+      return 0;
     }
-    
-    chrome.runtime.sendMessage({
-      action: 'changesApplied',
-      count: elementsToRemove.length
-    });
   }
 
-  // Manual Selection Mode
-  handleToggleSelection() {
-    if (this.isManualSelectionMode) {
-      this.disableManualSelection();
+  async saveRule(rule) {
+    try {
+      const key = `rules:${this.host}`;
+      const stored = await chrome.storage.sync.get(key);
+      const rules = stored[key] || [];
+      
+      // Remove duplicates
+      const filtered = rules.filter(r => r.selector !== rule.selector);
+      filtered.push({
+        ...rule,
+        createdAt: Date.now()
+      });
+      
+      await chrome.storage.sync.set({ [key]: filtered });
+    } catch (error) {
+      console.warn('Failed to save rule:', error);
+    }
+  }
+
+  async applyPersistedRules() {
+    try {
+      const key = `rules:${this.host}`;
+      const stored = await chrome.storage.sync.get(key);
+      const rules = stored[key] || [];
+      
+      for (const rule of rules) {
+        this.applyRule(rule);
+      }
+    } catch (error) {
+      console.warn('Failed to apply persisted rules:', error);
+    }
+  }
+
+  toggleSelectionMode() {
+    this.isSelectionMode = !this.isSelectionMode;
+    
+    if (this.isSelectionMode) {
+      this.enterSelectionMode();
     } else {
-      this.enableManualSelection();
+      this.exitSelectionMode();
     }
-    
+
+    // Notify popup
     chrome.runtime.sendMessage({
-      action: 'selectionToggled',
-      active: this.isManualSelectionMode
-    });
+      action: 'tweakModeActive',
+      active: this.isSelectionMode
+    }).catch(() => {});
   }
 
-  enableManualSelection() {
-    this.isManualSelectionMode = true;
+  enterSelectionMode() {
     document.body.style.cursor = 'crosshair';
-    document.addEventListener('mouseover', this.handleMouseOver.bind(this));
+    document.addEventListener('mouseover', this.handleHover.bind(this));
     document.addEventListener('mouseout', this.handleMouseOut.bind(this));
-    document.addEventListener('click', this.handleClick.bind(this), true);
+    document.addEventListener('click', this.handleClick.bind(this));
+    
+    // Listen for ESC key
+    document.addEventListener('keydown', this.handleKeydown.bind(this));
   }
 
-  disableManualSelection() {
-    this.isManualSelectionMode = false;
-    document.body.style.cursor = 'default';
-    document.removeEventListener('mouseover', this.handleMouseOver.bind(this));
+  exitSelectionMode() {
+    document.body.style.cursor = '';
+    document.removeEventListener('mouseover', this.handleHover.bind(this));
     document.removeEventListener('mouseout', this.handleMouseOut.bind(this));
-    document.removeEventListener('click', this.handleClick.bind(this), true);
+    document.removeEventListener('click', this.handleClick.bind(this));
+    document.removeEventListener('keydown', this.handleKeydown.bind(this));
     
-    if (this.hoveredElement) {
-      this.hoveredElement.classList.remove('element-remover-highlight');
-      this.hoveredElement = null;
+    this.clearHighlights();
+  }
+
+  handleKeydown(e) {
+    if (e.key === 'Escape' && this.isSelectionMode) {
+      this.toggleSelectionMode();
+      e.preventDefault();
     }
   }
 
-  handleMouseOver(event) {
-    if (!this.isManualSelectionMode) return;
+  handleHover(e) {
+    if (!this.isSelectionMode || e.target.hasAttribute('data-erpro')) return;
     
-    if (this.hoveredElement) {
-      this.hoveredElement.classList.remove('element-remover-highlight');
-    }
-    
-    this.hoveredElement = event.target;
-    this.hoveredElement.classList.add('element-remover-highlight');
+    this.clearHighlights();
+    this.highlightElement(e.target);
   }
 
-  handleMouseOut(event) {
-    if (!this.isManualSelectionMode) return;
-    
-    if (event.target === this.hoveredElement) {
-      event.target.classList.remove('element-remover-highlight');
-    }
+  handleMouseOut(e) {
+    // Keep highlights until mouse enters another element
   }
 
-  handleClick(event) {
-    if (!this.isManualSelectionMode) return;
+  handleClick(e) {
+    if (!this.isSelectionMode || e.target.hasAttribute('data-erpro')) return;
     
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
+    e.preventDefault();
+    e.stopPropagation();
     
-    const elementToRemove = event.target;
-    
-    // Don't remove if it's already hidden or if it's one of our preview overlays
-    if (elementToRemove.hasAttribute('data-element-remover-preview') || 
-        elementToRemove.style.display === 'none') {
-      return;
-    }
-    
-    // Store for undo
-    const historyItem = {
-      timestamp: Date.now(),
-      elements: [{
-        element: elementToRemove,
-        originalDisplay: elementToRemove.style.display,
-        originalVisibility: elementToRemove.style.visibility,
-        parent: elementToRemove.parentNode,
-        nextSibling: elementToRemove.nextSibling
-      }]
+    const rule = {
+      type: 'hide',
+      selector: this.generateSelector(e.target),
+      description: this.generateDescription(e.target)
     };
 
-    // Hide the element
-    elementToRemove.style.display = 'none';
-    this.history.push(historyItem);
-    
-    // If we were in reset state, we're no longer in original state
-    if (this.isPageReset) {
-      this.isPageReset = false;
+    const count = this.applyRule(rule);
+    if (count > 0) {
+      this.saveRule(rule);
+      this.showToast(`Hidden: ${rule.description}`, 'success');
+      
       chrome.runtime.sendMessage({
-        action: 'resetStateChanged',
-        isPageReset: false
-      });
+        action: 'elementHidden',
+        rule: rule,
+        count: count
+      }).catch(() => {});
     }
-    
-    // Remove highlight from this element if it exists
-    if (this.hoveredElement === elementToRemove) {
-      this.hoveredElement = null;
-    }
-    
-    // Stay in manual selection mode - don't disable it
-    chrome.runtime.sendMessage({
-      action: 'elementRemoved',
-      elementInfo: {
-        tagName: elementToRemove.tagName.toLowerCase(),
-        className: elementToRemove.className,
-        id: elementToRemove.id
-      }
+  }
+
+  highlightElement(element) {
+    element.style.setProperty('outline', '2px solid #ff6b35', 'important');
+    element.style.setProperty('outline-offset', '2px', 'important');
+    element.setAttribute('data-erpro-highlighted', 'true');
+  }
+
+  clearHighlights() {
+    const highlighted = document.querySelectorAll('[data-erpro-highlighted]');
+    highlighted.forEach(el => {
+      el.style.removeProperty('outline');
+      el.style.removeProperty('outline-offset');  
+      el.removeAttribute('data-erpro-highlighted');
     });
   }
 
-  // Undo/Reset functionality
-  handleUndo() {
-    if (this.history.length === 0) {
-      chrome.runtime.sendMessage({
-        action: 'error',
-        message: 'Nothing to undo'
-      });
+  generateSelector(element) {
+    // Simple selector generation
+    if (element.id) {
+      return `#${element.id}`;
+    }
+    
+    if (element.className && typeof element.className === 'string') {
+      const classes = element.className.split(' ').filter(cls => cls.length > 0);
+      if (classes.length > 0) {
+        return `${element.tagName.toLowerCase()}.${classes.join('.')}`;
+      }
+    }
+    
+    // Fallback to tag + nth-child
+    const parent = element.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children);
+      const index = siblings.indexOf(element);
+      return `${parent.tagName.toLowerCase()} > ${element.tagName.toLowerCase()}:nth-child(${index + 1})`;
+    }
+    
+    return element.tagName.toLowerCase();
+  }
+
+  generateDescription(element) {
+    const ariaLabel = element.getAttribute('aria-label');
+    if (ariaLabel) return ariaLabel;
+    
+    const title = element.getAttribute('title');
+    if (title) return title;
+    
+    const text = element.textContent?.trim();
+    if (text && text.length < 50) return text;
+    
+    return `${element.tagName.toLowerCase()} element`;
+  }
+
+  undo() {
+    // Simple undo - restore all hidden elements
+    const hidden = document.querySelectorAll('[data-erpro-hidden]');
+    if (hidden.length === 0) {
+      this.showToast('Nothing to undo', 'info');
       return;
     }
-    
-    const lastChange = this.history.pop();
-    lastChange.elements.forEach(item => {
-      if (item.element && item.element.parentNode) {
-        item.element.style.display = item.originalDisplay;
-        item.element.style.visibility = item.originalVisibility;
-      }
+
+    hidden.forEach(element => {
+      element.style.removeProperty('display');
+      element.removeAttribute('data-erpro-hidden');
     });
+
+    this.appliedRules.clear();
+    this.hiddenElements = new WeakMap();
     
-    chrome.runtime.sendMessage({
-      action: 'undoCompleted'
-    });
+    // Clear stored rules
+    chrome.storage.sync.remove(`rules:${this.host}`).catch(() => {});
+    
+    this.showToast('All changes undone', 'success');
   }
 
-  handleReset() {
-    if (!this.isPageReset) {
-      // First reset - restore all elements and save history
-      this.history.forEach(change => {
-        change.elements.forEach(item => {
-          if (item.element && item.element.parentNode) {
-            item.element.style.display = item.originalDisplay;
-            item.element.style.visibility = item.originalVisibility;
-          }
-        });
+  async resetSite(temporary = true) {
+    if (temporary) {
+      // Just restore elements without clearing storage
+      const hidden = document.querySelectorAll('[data-erpro-hidden], [data-erpro-dimmed]');
+      hidden.forEach(element => {
+        element.style.removeProperty('display');
+        element.style.removeProperty('opacity');
+        element.removeAttribute('data-erpro-hidden');
+        element.removeAttribute('data-erpro-dimmed');
       });
       
-      // Save the history before clearing it
-      this.savedHistory = [...this.history];
-      this.history = [];
-      this.isPageReset = true;
+      this.appliedRules.clear();
+      this.hiddenElements = new WeakMap();
       
-      chrome.runtime.sendMessage({
-        action: 'resetCompleted',
-        resetState: 'original'
-      });
+      return { success: true, temporary: true };
     } else {
-      // Second reset - re-apply all previous changes
-      this.savedHistory.forEach(change => {
-        change.elements.forEach(item => {
-          if (item.element && item.element.parentNode) {
-            item.element.style.display = 'none';
-          }
-        });
+      // Clear storage and restore
+      await chrome.storage.sync.remove(`rules:${this.host}`);
+      
+      const hidden = document.querySelectorAll('[data-erpro-hidden], [data-erpro-dimmed]');
+      hidden.forEach(element => {
+        element.style.removeProperty('display');
+        element.style.removeProperty('opacity');
+        element.removeAttribute('data-erpro-hidden');
+        element.removeAttribute('data-erpro-dimmed');
       });
       
-      // Restore the history
-      this.history = [...this.savedHistory];
-      this.isPageReset = false;
+      this.appliedRules.clear();
+      this.hiddenElements = new WeakMap();
       
-      chrome.runtime.sendMessage({
-        action: 'resetCompleted',
-        resetState: 'modified'
-      });
+      return { success: true, temporary: false };
     }
+  }
+
+  showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.setAttribute('data-erpro', 'toast');
+    toast.className = `erpro-toast erpro-toast-${type}`;
+    toast.textContent = message;
     
-    this.clearPreview();
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10001;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      animation: slideIn 0.3s ease-out;
+      ${type === 'success' ? 'background: #10b981;' : 
+        type === 'error' ? 'background: #ef4444;' : 
+        'background: #3b82f6;'}
+    `;
     
-    if (this.isManualSelectionMode) {
-      this.disableManualSelection();
-    }
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.remove();
+      }
+    }, 3000);
   }
 }
 
 // Initialize when DOM is ready
-function initializeElementRemover() {
-  if (window.elementRemover) {
-    return; // Already initialized
-  }
-  
-  try {
-    window.elementRemover = new ElementRemover();
-  } catch (error) {
-    console.error('Element Remover Pro: Error initializing:', error);
-  }
-}
-
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeElementRemover);
+  document.addEventListener('DOMContentLoaded', () => {
+    window.elementRemover = new ElementRemover();
+  });
 } else {
-  initializeElementRemover();
+  window.elementRemover = new ElementRemover();
 }

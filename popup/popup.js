@@ -128,7 +128,7 @@ class ElementRemoverPopup {
     try {
       await chrome.scripting.executeScript({
         target: { tabId: this.currentTab.id },
-        files: ['content/content.js']
+        files: ['content.js']
       });
 
       await chrome.scripting.insertCSS({
@@ -137,7 +137,7 @@ class ElementRemoverPopup {
       });
 
       // Wait a bit for initialization then try again
-      setTimeout(() => this.getPageInfo(), 500);
+      setTimeout(() => this.getPageInfo(), 1000);
       
     } catch (error) {
       console.error('Content script injection failed:', error);

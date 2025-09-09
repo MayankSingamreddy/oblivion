@@ -17,9 +17,9 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
+      "js": ["content.js"],
       "css": ["assets/styles.css"],
-      "run_at": "document_start"
+      "run_at": "document_idle"
     }
   ],
   
@@ -50,5 +50,12 @@
       },
       "description": "Quick Hide (enter Tweak mode)"
     }
-  }
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["ai/ai-service.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
