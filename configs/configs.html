@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Element Remover Pro - My Configurations</title>
+  <link rel="stylesheet" href="configs.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>My Configurations</h1>
+      <p class="subtitle">Manage your saved site configurations</p>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-section">
+      <div class="stat-card">
+        <div class="stat-number" id="totalSites">0</div>
+        <div class="stat-label">Sites Configured</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalRules">0</div>
+        <div class="stat-label">Total Rules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="lastUsed">Never</div>
+        <div class="stat-label">Last Used</div>
+      </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="controls-section">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search sites..." />
+        <button id="searchBtn" class="search-btn">🔍</button>
+      </div>
+      <div class="filter-buttons">
+        <button class="filter-btn active" data-filter="all">All Sites</button>
+        <button class="filter-btn" data-filter="recent">Recently Used</button>
+        <button class="filter-btn" data-filter="most-rules">Most Rules</button>
+      </div>
+    </div>
+
+    <!-- Configurations List -->
+    <div class="configs-section">
+      <div id="configsList" class="configs-list">
+        <!-- Configurations will be populated here -->
+      </div>
+      
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">📋</div>
+        <h3>No Configurations Found</h3>
+        <p>You haven't saved any site configurations yet. Visit a site, hide some elements, and click "Save Current Config" to get started.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading configurations...</p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-section">
+      <button id="exportAllBtn" class="action-btn secondary">Export All</button>
+      <button id="importBtn" class="action-btn secondary">Import</button>
+      <button id="clearAllBtn" class="action-btn danger">Clear All</button>
+    </div>
+  </div>
+
+  <!-- Config Detail Modal -->
+  <div id="configModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Site Configuration</h2>
+        <button id="modalClose" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="config-info">
+          <div class="info-row">
+            <label>Site:</label>
+            <span id="modalSite"></span>
+          </div>
+          <div class="info-row">
+            <label>Rules:</label>
+            <span id="modalRuleCount"></span>
+          </div>
+          <div class="info-row">
+            <label>Created:</label>
+            <span id="modalCreated"></span>
+          </div>
+        </div>
+        
+        <div class="rules-list">
+          <h3>Rules:</h3>
+          <div id="modalRulesList" class="modal-rules">
+            <!-- Rules will be populated here -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modalEdit" class="btn primary">Edit Rules</button>
+        <button id="modalDelete" class="btn danger">Delete Config</button>
+        <button id="modalCancel" class="btn secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept=".json" style="display: none;">
+
+  <script src="configs.js"></script>
+</body>
+</html>

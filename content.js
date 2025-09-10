@@ -117,6 +117,10 @@ class ElementRemover {
           sendResponse(await this.resetSite(message.temporary));
           break;
           
+        case 'saveCurrentConfig':
+          sendResponse(await this.saveCurrentConfig());
+          break;
+          
         default:
           sendResponse({ error: 'Unknown action' });
       }
@@ -130,6 +134,10 @@ class ElementRemover {
     const hasPreset = !!this.sitePresets[this.host];
     const appliedCount = this.appliedRules.size;
     
+    // Check if site has saved config
+    const savedRules = await chrome.storage.sync.get(`rules:${this.host}`);
+    const hasSavedConfig = savedRules[`rules:${this.host}`] && savedRules[`rules:${this.host}`].length > 0;
+    
     // Detect common elements for chips
     const chips = this.detectCommonElements();
     
@@ -137,6 +145,7 @@ class ElementRemover {
       host: this.host,
       path: location.pathname,
       hasPreset,
+      hasSavedConfig,
       appliedCount,
       chips,
       isActive: appliedCount > 0
@@ -718,6 +727,32 @@ class ElementRemover {
       this.hiddenElements = new WeakMap();
       
       return { success: true, temporary: false };
+    }
+  }
+
+  async saveCurrentConfig() {
+    try {
+      // Get all currently applied rules
+      const rulesToSave = Array.from(this.appliedRules.values());
+      
+      if (rulesToSave.length === 0) {
+        return { error: 'No rules to save - hide some elements first' };
+      }
+      
+      // Save rules to chrome storage
+      await chrome.storage.sync.set({
+        [`rules:${this.host}`]: rulesToSave
+      });
+      
+      return { 
+        success: true, 
+        savedCount: rulesToSave.length,
+        host: this.host
+      };
+      
+    } catch (error) {
+      console.error('Save config failed:', error);
+      return { error: error.message };
     }
   }
 

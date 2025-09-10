@@ -11,7 +11,10 @@
         <h2 id="siteName">Loading...</h2>
         <div class="status-dot" id="statusDot"></div>
       </div>
-      <button id="optionsBtn" class="options-btn" title="Settings">⚙️</button>
+      <div class="header-actions">
+        <button id="configsBtn" class="header-btn" title="My Configs">📋</button>
+        <button id="optionsBtn" class="header-btn" title="Settings">⚙️</button>
+      </div>
     </div>
 
     <!-- Primary Actions -->
@@ -50,13 +53,16 @@
       </div>
     </div>
 
-    <!-- Always Apply Toggle -->
-    <div class="always-apply">
-      <label class="toggle">
-        <input type="checkbox" id="alwaysApplyToggle">
-        <span class="toggle-slider"></span>
-        <span class="toggle-label">Always apply on this site</span>
-      </label>
+    <!-- Memory Controls -->
+    <div class="memory-controls">
+      <button id="saveConfigBtn" class="memory-btn save-btn">
+        <span class="memory-icon">💾</span>
+        <span class="memory-text">Save Current Config</span>
+      </button>
+      <div id="memoryStatus" class="memory-status" style="display: none;">
+        <span class="status-icon">✓</span>
+        <span class="status-text">Auto-applies on visit</span>
+      </div>
     </div>
 
     <!-- Inline Chips for Common Elements -->

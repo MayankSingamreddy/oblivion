@@ -15,6 +15,7 @@ class ElementRemoverPopup {
     // Header elements
     this.siteName = document.getElementById('siteName');
     this.statusDot = document.getElementById('statusDot');
+    this.configsBtn = document.getElementById('configsBtn');
     this.optionsBtn = document.getElementById('optionsBtn');
 
     // Primary action buttons
@@ -28,8 +29,11 @@ class ElementRemoverPopup {
     this.aiSubmitBtn = document.getElementById('aiSubmitBtn');
     this.aiCancelBtn = document.getElementById('aiCancelBtn');
 
-    // Controls
-    this.alwaysApplyToggle = document.getElementById('alwaysApplyToggle');
+    // Memory controls
+    this.saveConfigBtn = document.getElementById('saveConfigBtn');
+    this.memoryStatus = document.getElementById('memoryStatus');
+    
+    // Other controls
     this.chipsContainer = document.getElementById('chipsContainer');
     this.chipsList = document.getElementById('chipsList');
     
@@ -52,16 +56,19 @@ class ElementRemoverPopup {
     this.aiSubmitBtn.addEventListener('click', () => this.handleAiSubmit());
     this.aiCancelBtn.addEventListener('click', () => this.hideAiInput());
 
-    // Controls
-    this.alwaysApplyToggle.addEventListener('change', (e) => {
-      this.handleAlwaysApplyToggle(e.target.checked);
-    });
+    // Memory controls
+    this.saveConfigBtn.addEventListener('click', () => this.handleSaveConfig());
 
     // Footer
     this.undoBtn.addEventListener('click', () => this.handleUndo());
     this.resetBtn.addEventListener('click', () => this.handleReset());
 
-    // Options
+    // Header actions
+    this.configsBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('configs/configs.html') });
+      window.close();
+    });
+
     this.optionsBtn.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
       window.close();
@@ -159,6 +166,17 @@ class ElementRemoverPopup {
     } else {
       this.cleanBtn.disabled = true;
       this.cleanBtn.querySelector('.btn-subtitle').textContent = 'No preset available';
+    }
+
+    // Update memory controls based on saved config
+    if (this.pageInfo.hasSavedConfig) {
+      this.saveConfigBtn.classList.add('saved');
+      this.saveConfigBtn.querySelector('.memory-text').textContent = 'Config Saved';
+      this.memoryStatus.style.display = 'flex';
+    } else {
+      this.saveConfigBtn.classList.remove('saved');
+      this.saveConfigBtn.querySelector('.memory-text').textContent = 'Save Current Config';
+      this.memoryStatus.style.display = 'none';
     }
 
     // Update chips if available
@@ -324,17 +342,29 @@ class ElementRemoverPopup {
     }
   }
 
-  async handleAlwaysApplyToggle(enabled) {
+  async handleSaveConfig() {
     try {
-      await chrome.tabs.sendMessage(this.currentTab.id, {
-        action: 'toggleAlwaysApply',
-        enabled: enabled
+      this.setButtonLoading(this.saveConfigBtn, true);
+      
+      const response = await chrome.tabs.sendMessage(this.currentTab.id, {
+        action: 'saveCurrentConfig'
       });
+
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+
+      // Update UI to show saved state
+      this.saveConfigBtn.classList.add('saved');
+      this.saveConfigBtn.querySelector('.memory-text').textContent = 'Config Saved';
+      this.memoryStatus.style.display = 'flex';
+      
+      this.showStatus(`Configuration saved - will auto-apply on future visits`, 'success');
       
     } catch (error) {
-      console.error('Always apply toggle failed:', error);
-      // Reset toggle state
-      this.alwaysApplyToggle.checked = !enabled;
+      this.showStatus(`Save failed: ${error.message}`, 'error');
+    } finally {
+      this.setButtonLoading(this.saveConfigBtn, false);
     }
   }
 
