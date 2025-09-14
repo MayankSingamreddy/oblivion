@@ -20,7 +20,7 @@ All the starting instructions are within oblivion/instructions.md. Reach out to 
 
 **Oblivion** is a unified, minimal, Manifest V3 Chrome extension that combines natural-language, AI-driven element detection with a manual click-to-select element remover. It’s built to be safe, reversible, and developer-friendly — hide annoying page elements (ads, popups, widgets) with a prompt or pick them manually.
 
-![Example Screenshot](./example.png)
+![Example Screenshot](./Example.png)
 
 ---
 
