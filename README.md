@@ -7,8 +7,11 @@ There is a feature in the Arc browser someone told me about called "Arc Boosts".
 https://resources.arc.net/hc/en-us/articles/19212718608151-Boosts-Customize-Any-Website
 
 It does the exact same thing without the proactive AI, and people love it:
-https://x.com/Stammy/status/1562311240826888192
-https://x.com/nateparrott/status/1661737457187196930
+- https://x.com/Stammy/status/1562311240826888192
+- https://x.com/nateparrott/status/1661737457187196930
+
+Useful link: https://www.reddit.com/r/ArcBrowser/comments/18wi7g0/how_do_you_use_boost_in_arc_browser/
+
 and some other use cases boost contains: https://x.com/bantg/status/1699364366678687855
 
 A lot of value to deliver here. Let me know if you want to pick it up. 
