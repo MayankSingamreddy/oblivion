@@ -1,0 +1,189 @@
+/* Critical CSS for zero-flicker element hiding - injected at document_start */
+
+/* Base hiding styles */
+[data-oblivion-hidden="true"] {
+  display: none !important;
+}
+
+[data-oblivion-blanked="true"] {
+  color: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+[data-oblivion-replaced="true"] {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Common ad patterns - pre-hidden for zero flicker */
+[id*="ad" i]:not([id*="add" i]):not([id*="admin" i]):not([id*="address" i]),
+[class*="ad" i]:not([class*="add" i]):not([class*="admin" i]):not([class*="address" i]):not([class*="shadow" i]):not([class*="header" i]),
+[data-testid*="ad" i]:not([data-testid*="add" i]):not([data-testid*="admin" i]),
+[aria-label*="advertisement" i],
+[aria-label*="sponsored" i] {
+  /* Will be controlled by dynamic CSS injection */
+}
+
+/* Sponsored content patterns */
+[data-promoted="true"],
+.promoted,
+.promotedlink,
+[class*="sponsor" i] {
+  /* Will be controlled by dynamic CSS injection */
+}
+
+/* Oblivion UI elements - always visible and unaffected */
+[data-oblivion-ui] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+/* Selection overlay */
+#oblivion-selection-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  cursor: crosshair !important;
+  user-select: none !important;
+}
+
+/* Mode indicator */
+#oblivion-mode-indicator {
+  position: fixed !important;
+  top: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483647 !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  color: white !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  user-select: none !important;
+}
+
+/* Toast container */
+#oblivion-toast-container {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+}
+
+/* Theme capsule host */
+oblivion-theme-capsule {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* Element highlighting during selection */
+[data-oblivion-highlighted="true"] {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Interactive element warning highlight */
+[data-oblivion-highlighted="true"][data-oblivion-interactive="true"] {
+  outline: 2px dashed #f59e0b !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+/* Smooth transitions for state changes */
+* {
+  transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+}
+
+/* Prevent layout shift when elements are hidden */
+[data-oblivion-preserve-space="true"] {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  /* Keep original display, width, height */
+}
+
+/* Critical selectors placeholder - will be populated by content script */
+#oblivion-critical {
+  /* Dynamic critical CSS will be injected here */
+}
+
+/* Performance optimization - disable expensive properties during transitions */
+[data-oblivion-optimizing] * {
+  animation-duration: 0.01ms !important;
+  animation-delay: -1ms !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+}
+
+/* Accessibility - respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  [data-oblivion-ui] * {
+    animation-duration: 0.01ms !important;
+    animation-delay: -1ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* Dark mode adaptations */
+@media (prefers-color-scheme: dark) {
+  #oblivion-mode-indicator {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: black !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  [data-oblivion-highlighted="true"] {
+    outline: 3px solid CanvasText !important;
+    background: Highlight !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  #oblivion-mode-indicator {
+    font-size: 12px !important;
+    padding: 8px 16px !important;
+    top: 10px !important;
+  }
+  
+  #oblivion-toast-container {
+    top: 10px !important;
+    right: 10px !important;
+  }
+}
+
+/* Print styles - hide all Oblivion UI when printing */
+@media print {
+  [data-oblivion-ui] {
+    display: none !important;
+  }
+}

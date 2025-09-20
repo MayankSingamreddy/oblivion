@@ -1,0 +1,44 @@
+import { SelectorEngine } from './selectorEngine';
+import { RuleEngine } from './ruleEngine';
+export declare class OverlayManager {
+    private isActive;
+    private overlay;
+    private highlightElements;
+    private currentTarget;
+    private selectorEngine;
+    private ruleEngine;
+    private boundHandlers;
+    private toastContainer;
+    constructor(selectorEngine: SelectorEngine, ruleEngine: RuleEngine);
+    private bindEventHandlers;
+    enterSelectionMode(): void;
+    exitSelectionMode(): void;
+    toggleSelectionMode(): boolean;
+    private createOverlay;
+    private removeOverlay;
+    private attachEventListeners;
+    private detachEventListeners;
+    private handleMouseMove;
+    private handleClick;
+    private handleContextMenu;
+    private handleKeydown;
+    private handleScroll;
+    private updateHighlight;
+    private createHighlightElement;
+    private showElementInfo;
+    private clearHighlights;
+    private createRuleFromSelection;
+    private showInteractiveWarning;
+    private showContextMenu;
+    private isValidSelectionTarget;
+    private showModeIndicator;
+    private hideModeIndicator;
+    private createToastContainer;
+    private removeToastContainer;
+    private showToast;
+    private notifyRuleCreated;
+    isSelectionModeActive(): boolean;
+    getCurrentTarget(): Element | null;
+    createRuleFromSelector(selector: string, action?: 'hide' | 'blank' | 'replace'): boolean;
+}
+//# sourceMappingURL=overlayManager.d.ts.map
