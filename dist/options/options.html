@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Oblivion - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Oblivion Settings</h1>
+      <p class="subtitle">Configure AI-powered element removal and personalization</p>
+    </div>
+
+    <!-- AI Configuration -->
+    <div class="section">
+      <h2>AI Configuration</h2>
+      
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="useLocalAI" checked />
+          Use local AI processing (WebLLM)
+        </label>
+        <div class="help-text">
+          Processes requests locally for privacy. Requires WebGPU support and downloads ~2GB model on first use.
+          Falls back to remote API if disabled or unavailable.
+        </div>
+      </div>
+
+      <div class="setting-group remote-ai-settings">
+        <h3>Remote AI Fallback</h3>
+        
+        <div class="sub-setting">
+          <label for="apiKey">API Key</label>
+          <input type="password" id="apiKey" placeholder="sk-... (OpenAI compatible)" />
+          <div class="help-text">
+            Get your API key from <a href="https://platform.openai.com/account/api-keys" target="_blank">OpenAI Platform</a> or compatible service.
+            This key is stored locally and never shared.
+          </div>
+        </div>
+
+        <div class="sub-setting">
+          <label for="apiEndpoint">API Endpoint</label>
+          <input type="text" id="apiEndpoint" value="https://api.openai.com/v1" />
+          <div class="help-text">
+            For OpenAI-compatible services, change this endpoint URL.
+          </div>
+        </div>
+
+        <div class="sub-setting">
+          <label for="model">AI Model</label>
+          <select id="model">
+            <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4o">GPT-4o</option>
+          </select>
+          <div class="help-text">
+            GPT-4o Mini provides the best balance of speed, accuracy, and cost for element detection.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Safety Settings -->
+    <div class="section">
+      <h2>Safety & Performance</h2>
+      
+      <div class="setting-group">
+        <label for="maxElements">Maximum elements per rule</label>
+        <input type="number" id="maxElements" value="100" min="1" max="1000" />
+        <div class="help-text">
+          Safety limit to prevent accidentally affecting too many elements with a single rule.
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="warnInteractive" checked />
+          Warn before hiding interactive elements
+        </label>
+        <div class="help-text">
+          Shows a warning when trying to hide buttons, links, or form inputs to prevent breaking page functionality.
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="enableAutoRevert" checked />
+          Auto-revert broken pages
+        </label>
+        <div class="help-text">
+          Automatically shows hidden elements if the page becomes unusable (e.g., can't navigate or interact).
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage & Sync -->
+    <div class="section">
+      <h2>Storage & Sync</h2>
+      
+      <div class="setting-group">
+        <label>
+          <input type="checkbox" id="enableSync" checked />
+          Sync rules across devices
+        </label>
+        <div class="help-text">
+          Uses Chrome's sync storage to keep your rules and presets synchronized across signed-in Chrome browsers.
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label for="storageQuota">Storage usage</label>
+        <div class="storage-info">
+          <div class="storage-bar">
+            <div class="storage-used" id="storageUsed" style="width: 0%"></div>
+          </div>
+          <div class="storage-text" id="storageText">Loading...</div>
+        </div>
+        <div class="help-text">
+          Rules are compressed and stored efficiently. Click "Cleanup" to remove unused rules.
+        </div>
+      </div>
+    </div>
+
+    <!-- Import/Export -->
+    <div class="section">
+      <h2>Import/Export</h2>
+      
+      <div class="setting-group">
+        <div class="import-export-actions">
+          <button id="exportBtn" class="btn secondary">Export Rules</button>
+          <button id="importBtn" class="btn secondary">Import Rules</button>
+          <input type="file" id="importFile" accept=".json" style="display: none;" />
+        </div>
+        <div class="help-text">
+          Back up your rules and presets, or share configurations with others.
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button id="saveBtn" class="btn primary">Save Settings</button>
+      <button id="testAIBtn" class="btn secondary">Test AI Connection</button>
+      <button id="resetBtn" class="btn secondary">Reset to Defaults</button>
+      <button id="cleanupBtn" class="btn secondary">Cleanup Storage</button>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <!-- About Section -->
+    <div class="info-section">
+      <h3>About Oblivion v2.0</h3>
+      <p>
+        Oblivion helps you shape the web by intelligently removing distracting elements while preserving
+        functionality. It uses advanced AI to understand page structure and your preferences.
+      </p>
+      
+      <h4>Key Features:</h4>
+      <ul>
+        <li><strong>Local AI Processing</strong>: Privacy-first with optional remote fallback</li>
+        <li><strong>Smart Selection</strong>: Stable selectors that work across page updates</li>
+        <li><strong>Memory System</strong>: Rules persist and auto-apply on future visits</li>
+        <li><strong>Safety Rails</strong>: Prevents breaking page functionality</li>
+        <li><strong>Theme Integration</strong>: Customize appearance while preserving site design</li>
+      </ul>
+
+      <div class="version-info">
+        <strong>Version:</strong> <span id="versionInfo">2.0.0</span> |
+        <strong>Build:</strong> <span id="buildInfo">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 # Oblivion v2.0 🚫
 
-> Shape the web you use every day - intelligent element removal with memory and AI assistance
+*project not finished, (instructions.md - instructions-completed.md + current bugs = finished product)
+
+> Desription: Shape the web you use every day - intelligent element removal with memory and AI assistance
 
 A powerful Chrome extension for hiding, modifying, or replacing website elements with AI assistance and persistent memory.
 

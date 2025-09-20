@@ -7,7 +7,7 @@
     "build": "tsc && npm run copy-assets",
     "build:watch": "tsc --watch",
     "copy-assets": "npm run copy-css && npm run copy-html && npm run copy-workers && npm run copy-icons",
-    "copy-css": "cp -r src/assets/*.css dist/assets/ 2>/dev/null || mkdir -p dist/assets && cp src/assets/critical.css dist/assets/",
+    "copy-css": "mkdir -p dist/assets dist/popup dist/options && cp src/assets/critical.css dist/assets/ && cp src/popup/*.css dist/popup/ 2>/dev/null || true && cp src/options/*.css dist/options/ 2>/dev/null || true",
     "copy-html": "mkdir -p dist/popup dist/options && cp src/popup/*.html dist/popup/ && cp src/options/*.html dist/options/ 2>/dev/null || true",
     "copy-workers": "mkdir -p dist/workers && cp src/workers/*.js dist/workers/",
     "copy-icons": "cp -r icons dist/ 2>/dev/null || mkdir -p dist/icons",

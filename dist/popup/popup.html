@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Oblivion - Shape Your Web</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header with site info and status -->
+    <div class="header">
+      <div class="site-info">
+        <h2 id="siteName">Loading...</h2>
+        <div class="status-dot" id="statusDot"></div>
+      </div>
+      <div class="header-actions">
+        <button id="presetsBtn" class="header-btn" title="Presets">📋</button>
+        <button id="optionsBtn" class="header-btn" title="Settings">⚙️</button>
+      </div>
+    </div>
+
+    <!-- Primary Actions -->
+    <div class="primary-actions">
+      <button id="cleanBtn" class="action-btn clean-btn">
+        <div class="btn-icon">✨</div>
+        <div class="btn-text">
+          <div class="btn-title">Clean</div>
+          <div class="btn-subtitle">Apply preset</div>
+        </div>
+      </button>
+
+      <button id="selectBtn" class="action-btn select-btn">
+        <div class="btn-icon">🎯</div>
+        <div class="btn-text">
+          <div class="btn-title">Select</div>
+          <div class="btn-subtitle">Point & hide</div>
+        </div>
+      </button>
+
+      <button id="aiBtn" class="action-btn ai-btn">
+        <div class="btn-icon">🤖</div>
+        <div class="btn-text">
+          <div class="btn-title">Ask AI</div>
+          <div class="btn-subtitle">Natural language</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- AI Input Panel (hidden by default) -->
+    <div id="aiInputPanel" class="ai-input-panel" style="display: none;">
+      <textarea id="aiPrompt" placeholder="e.g., 'Hide all ads and suggested content'"></textarea>
+      <div class="ai-actions">
+        <button id="aiSubmitBtn" class="btn primary">Apply</button>
+        <button id="aiCancelBtn" class="btn secondary">Cancel</button>
+      </div>
+      <div class="ai-status" id="aiStatus" style="display: none;"></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div id="quickActions" class="quick-actions" style="display: none;">
+      <div class="quick-actions-label">Quick actions:</div>
+      <div id="quickActionsList" class="quick-actions-list">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Memory Controls -->
+    <div class="memory-controls">
+      <button id="saveConfigBtn" class="memory-btn save-btn">
+        <span class="memory-icon">💾</span>
+        <span class="memory-text">Save Current Config</span>
+      </button>
+      <div id="memoryStatus" class="memory-status" style="display: none;">
+        <span class="status-icon">✓</span>
+        <span class="status-text">Auto-applies on visit</span>
+      </div>
+    </div>
+
+    <!-- Theme Controls -->
+    <div id="themeControls" class="theme-controls" style="display: none;">
+      <div class="theme-section">
+        <label>Theme Style:</label>
+        <select id="themeSelect">
+          <option value="none">Default</option>
+          <option value="minimal">Minimal</option>
+          <option value="dark">Dark Mode</option>
+          <option value="cozy">Cozy</option>
+          <option value="focus">Focus Mode</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="footer-controls">
+      <button id="undoBtn" class="footer-btn" disabled>Undo</button>
+      <button id="redoBtn" class="footer-btn" disabled>Redo</button>
+      <button id="resetBtn" class="footer-btn">Reset</button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message" style="display: none;"></div>
+
+    <!-- Selection Mode Indicator -->
+    <div id="selectionIndicator" class="selection-indicator" style="display: none;">
+      <div class="indicator-content">
+        <span class="indicator-icon">🎯</span>
+        <div class="indicator-text">
+          <strong>Selection Mode Active</strong>
+          <div class="indicator-subtitle">Hover and click elements to hide them</div>
+          <div class="indicator-escape">Press ESC to exit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
