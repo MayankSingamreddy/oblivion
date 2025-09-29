@@ -1,5 +1,9 @@
 # Oblivion v2.0 🚫
 
+
+#update: someone else is making this (amidotdev)
+https://x.com/aidenybai/status/1972689770036773055
+
 *project not finished, (instructions.md - instructions-completed.md + current bugs = finished product)
 
 > Desription: Shape the web you use every day - intelligent element removal with memory and AI assistance
