@@ -1,8 +1,11 @@
 # Oblivion v2.0 🚫
 
 
-#update: someone else is making this (amidotdev)
-https://x.com/aidenybai/status/1972689770036773055
+## update: someone else is making this (@amidotdev)
+- https://x.com/aidenybai/status/1972689770036773055
+
+
+Probably letting go of the project from here
 
 *project not finished, (instructions.md - instructions-completed.md + current bugs = finished product)
 
